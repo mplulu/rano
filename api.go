@@ -10,8 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-
-	"github.com/mplulu/utils"
 )
 
 func (rano *Rano) sendRequest(method string, params map[string]string) (responseData map[string]interface{}, err error) {
@@ -78,9 +76,9 @@ func (rano *Rano) sendRequestWithFile(method string, params map[string]string, f
 	}
 	// log.Log("done sent 2")
 
-	ok := utils.GetBoolAtPath(data, "ok")
+	ok := data["ok"].(bool)
 	if !ok {
-		err = errors.New(utils.GetStringAtPath(data, "description"))
+		err = errors.New(data["description"].(string))
 		return nil, err
 	}
 	// log.Log("done sent 3")
