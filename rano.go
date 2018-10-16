@@ -6,6 +6,8 @@ import (
 )
 
 type Rano struct {
+	isDisable bool
+
 	token      string
 	chatIdList []string
 	baseUrl    string
@@ -13,7 +15,14 @@ type Rano struct {
 }
 
 func NewRano(token string, chatIdList []string) *Rano {
+	if token == "" {
+		fmt.Println("Rano is disable. No token")
+		return &Rano{
+			isDisable: true,
+		}
+	}
 	return &Rano{
+		isDisable:  false,
 		token:      token,
 		chatIdList: chatIdList,
 		baseUrl:    fmt.Sprintf("https://api.telegram.org/bot%s/", token),
@@ -22,6 +31,9 @@ func NewRano(token string, chatIdList []string) *Rano {
 }
 
 func (rano *Rano) Send(text string) {
+	if rano.isDisable {
+		return
+	}
 	for _, chatId := range rano.chatIdList {
 		response, err := rano.sendRequest(
 			"sendMessage",
