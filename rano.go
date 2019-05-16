@@ -3,6 +3,7 @@ package rano
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type Rano struct {
@@ -12,7 +13,13 @@ type Rano struct {
 	chatIdList []string
 	baseUrl    string
 	client     *http.Client
+
+	lastUpdateId            int64
+	alreadyReceivingMessage bool
+	MessageChan             chan *Message
 }
+
+type MessageHandler func(message string)
 
 func NewRano(token string, chatIdList []string) *Rano {
 	if token == "" {
@@ -21,18 +28,21 @@ func NewRano(token string, chatIdList []string) *Rano {
 			isDisable: true,
 		}
 	}
-	return &Rano{
+	rano := &Rano{
 		isDisable:  false,
 		token:      token,
 		chatIdList: chatIdList,
 		baseUrl:    fmt.Sprintf("https://api.telegram.org/bot%s/", token),
-		client:     &http.Client{},
+		client: &http.Client{
+			Timeout: 5 * 60 * time.Second,
+		},
 	}
+	return rano
 }
 
-func (rano *Rano) Send(text string) {
+func (rano *Rano) Send(text string) error {
 	if rano.isDisable {
-		return
+		return nil
 	}
 	for _, chatId := range rano.chatIdList {
 		response, err := rano.sendRequest(
@@ -41,6 +51,19 @@ func (rano *Rano) Send(text string) {
 				"chat_id": chatId,
 				"text":    text,
 			})
-		fmt.Println("RanoSend: ", response, err)
+		fmt.Println("RanoSend: ", chatId, text, response, err)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func (rano *Rano) StartReceivingMessage() {
+	if rano.alreadyReceivingMessage {
+		return
+	}
+	rano.alreadyReceivingMessage = true
+	rano.MessageChan = make(chan *Message, 1)
+	go rano.getUpdates()
 }
