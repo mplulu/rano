@@ -40,18 +40,36 @@ func NewRano(token string, chatIdList []string) *Rano {
 	return rano
 }
 
+func (rano *Rano) SendTo(chatId int64, text string) error {
+	if rano.isDisable {
+		return nil
+	}
+	chatIdStr := fmt.Sprintf("%d", chatId)
+	_, err := rano.sendRequest(
+		"sendMessage",
+		map[string]string{
+			"chat_id": chatIdStr,
+			"text":    text,
+		})
+	// fmt.Println("RanoSend: ", chatId, text, response, err)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (rano *Rano) Send(text string) error {
 	if rano.isDisable {
 		return nil
 	}
 	for _, chatId := range rano.chatIdList {
-		response, err := rano.sendRequest(
+		_, err := rano.sendRequest(
 			"sendMessage",
 			map[string]string{
 				"chat_id": chatId,
 				"text":    text,
 			})
-		fmt.Println("RanoSend: ", chatId, text, response, err)
+		// fmt.Println("RanoSend: ", chatId, text, response, err)
 		if err != nil {
 			return err
 		}
