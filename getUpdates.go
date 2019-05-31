@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/mplulu/utils"
 )
 
 type TLGUpdateRequest struct {
@@ -47,6 +49,8 @@ func (rano *Rano) getUpdates() {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(r)
+			// delay a bit to prevent internet or something offline, and this run repeately very fast
+			utils.DelayInDuration(10 * time.Second)
 			go rano.getUpdates()
 		}
 	}()
