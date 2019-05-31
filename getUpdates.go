@@ -47,6 +47,7 @@ func (rano *Rano) getUpdates() {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(r)
+			go rano.getUpdates()
 		}
 	}()
 	urlStr := fmt.Sprintf("%sgetUpdates", rano.baseUrl)
