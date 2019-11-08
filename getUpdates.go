@@ -33,6 +33,7 @@ type TLGUpdateResponseResultMessage struct {
 	Text        string                              `json:"text"`
 	From        *TLGUpdateResponseResultFrom        `json:"from"`
 	ChatChannel *TLGUpdateResponseResultChatChannel `json:"chat"`
+	ReplyTo     *TLGUpdateResponseResultReplyTo     `json:"reply_to_message"`
 }
 
 type TLGUpdateResponseResultChatChannel struct {
@@ -43,6 +44,13 @@ type TLGUpdateResponseResultChatChannel struct {
 type TLGUpdateResponseResultFrom struct {
 	Id   int64  `json:"id"`
 	Name string `json:"first_name"`
+}
+
+type TLGUpdateResponseResultReplyTo struct {
+	UnixDate    int64                               `json:"date"`
+	Text        string                              `json:"text"`
+	ChatChannel *TLGUpdateResponseResultChatChannel `json:"chat"`
+	From        *TLGUpdateResponseResultFrom        `json:"from"`
 }
 
 func (rano *Rano) getUpdates() {
@@ -107,12 +115,30 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 				Id:   result.Message.ChatChannel.Id,
 				Name: result.Message.ChatChannel.Name,
 			}
+			var replyTo *Message
+			if result.Message.ReplyTo != nil {
+				replyToAuthor := &Author{
+					Id:   result.Message.ReplyTo.From.Id,
+					Name: result.Message.ReplyTo.From.Name,
+				}
+				replyToGroup := &Group{
+					Id:   result.Message.ReplyTo.ChatChannel.Id,
+					Name: result.Message.ReplyTo.ChatChannel.Name,
+				}
+				replyTo = &Message{
+					From:  replyToAuthor,
+					Group: replyToGroup,
+					Text:  result.Message.ReplyTo.Text,
+					Date:  time.Unix(result.Message.ReplyTo.UnixDate, 0),
+				}
+			}
 			message := &Message{
 				UpdateId: result.UpdateId,
 				From:     author,
 				Group:    group,
 				Text:     result.Message.Text,
 				Date:     time.Unix(result.Message.UnixDate, 0),
+				ReplyTo:  replyTo,
 			}
 			list = append(list, message)
 		}
@@ -136,6 +162,7 @@ type Message struct {
 	Group    *Group
 	Text     string
 	Date     time.Time
+	ReplyTo  *Message
 }
 
 // {
