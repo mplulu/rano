@@ -58,6 +58,26 @@ func (rano *Rano) SendTo(chatId int64, text string) error {
 	return nil
 }
 
+func (rano *Rano) SendPhoto(chatId int64, photo []byte) error {
+	if rano.isDisable {
+		return nil
+	}
+	chatIdStr := fmt.Sprintf("%d", chatId)
+	_, err := rano.sendRequestWithBinaryFile(
+		"sendPhoto",
+		map[string]string{
+			"chat_id": chatIdStr,
+		},
+		map[string][]byte{
+			"photo": photo,
+		})
+	// fmt.Println("RanoSend: ", chatId, text, response, err)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (rano *Rano) Send(text string) error {
 	if rano.isDisable {
 		return nil
