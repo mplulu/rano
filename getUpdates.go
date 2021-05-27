@@ -145,6 +145,7 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 			}
 
 			entities := []*Entity{}
+			fmt.Println("len", len(message.Entities))
 			for _, entityResp := range message.Entities {
 				entityObjc := &Entity{
 					Type: entityResp.Type,
@@ -155,6 +156,9 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 						Name: entityResp.User.Name,
 					}
 				}
+
+				fmt.Println("parse entitiyes???")
+				entities = append(entities, entityObjc)
 			}
 			messageObjc := &Message{
 				UpdateId: result.UpdateId,
