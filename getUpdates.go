@@ -23,8 +23,9 @@ type TLGUpdateResponse struct {
 }
 
 type TLGUpdateResponseResult struct {
-	UpdateId int64                           `json:"update_id"`
-	Message  *TLGUpdateResponseResultMessage `json:"message"`
+	UpdateId      int64                           `json:"update_id"`
+	Message       *TLGUpdateResponseResultMessage `json:"message"`
+	EditedMessage *TLGUpdateResponseResultMessage `json:"edited_message"`
 }
 
 type TLGUpdateResponseResultMessage struct {
@@ -88,7 +89,7 @@ func (rano *Rano) getUpdates() {
 		panic(err)
 	}
 	response.Body.Close()
-	// fmt.Println("body", string(body))
+	fmt.Println("body", string(body))
 	var responseData *TLGUpdateResponse
 	err = json.Unmarshal(body, &responseData)
 	if err != nil {
@@ -107,40 +108,44 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 	list := []*Message{}
 	if r.Ok {
 		for _, result := range r.Result {
+			message := result.Message
+			if result.EditedMessage != nil {
+				message = result.EditedMessage
+			}
 			author := &Author{
-				Id:   result.Message.From.Id,
-				Name: result.Message.From.Name,
+				Id:   message.From.Id,
+				Name: message.From.Name,
 			}
 			group := &Group{
-				Id:   result.Message.ChatChannel.Id,
-				Name: result.Message.ChatChannel.Name,
+				Id:   message.ChatChannel.Id,
+				Name: message.ChatChannel.Name,
 			}
 			var replyTo *Message
-			if result.Message.ReplyTo != nil {
+			if message.ReplyTo != nil {
 				replyToAuthor := &Author{
-					Id:   result.Message.ReplyTo.From.Id,
-					Name: result.Message.ReplyTo.From.Name,
+					Id:   message.ReplyTo.From.Id,
+					Name: message.ReplyTo.From.Name,
 				}
 				replyToGroup := &Group{
-					Id:   result.Message.ReplyTo.ChatChannel.Id,
-					Name: result.Message.ReplyTo.ChatChannel.Name,
+					Id:   message.ReplyTo.ChatChannel.Id,
+					Name: message.ReplyTo.ChatChannel.Name,
 				}
 				replyTo = &Message{
 					From:  replyToAuthor,
 					Group: replyToGroup,
-					Text:  result.Message.ReplyTo.Text,
-					Date:  time.Unix(result.Message.ReplyTo.UnixDate, 0),
+					Text:  message.ReplyTo.Text,
+					Date:  time.Unix(message.ReplyTo.UnixDate, 0),
 				}
 			}
-			message := &Message{
+			messageObjc := &Message{
 				UpdateId: result.UpdateId,
 				From:     author,
 				Group:    group,
-				Text:     result.Message.Text,
-				Date:     time.Unix(result.Message.UnixDate, 0),
+				Text:     message.Text,
+				Date:     time.Unix(message.UnixDate, 0),
 				ReplyTo:  replyTo,
 			}
-			list = append(list, message)
+			list = append(list, messageObjc)
 		}
 	}
 	return list
