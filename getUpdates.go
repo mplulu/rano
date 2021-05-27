@@ -32,9 +32,10 @@ type TLGUpdateResponseResultMessage struct {
 	MessageId   int64                               `json:"message_id"`
 	UnixDate    int64                               `json:"date"`
 	Text        string                              `json:"text"`
-	From        *TLGUpdateResponseResultFrom        `json:"from"`
+	From        *TLGUpdateResponseResultUser        `json:"from"`
 	ChatChannel *TLGUpdateResponseResultChatChannel `json:"chat"`
 	ReplyTo     *TLGUpdateResponseResultReplyTo     `json:"reply_to_message"`
+	Entities    []*TLGUpdateResponseResultEntity    `json:"entities"`
 }
 
 type TLGUpdateResponseResultChatChannel struct {
@@ -42,7 +43,7 @@ type TLGUpdateResponseResultChatChannel struct {
 	Name string `json:"title"`
 }
 
-type TLGUpdateResponseResultFrom struct {
+type TLGUpdateResponseResultUser struct {
 	Id   int64  `json:"id"`
 	Name string `json:"first_name"`
 }
@@ -51,7 +52,12 @@ type TLGUpdateResponseResultReplyTo struct {
 	UnixDate    int64                               `json:"date"`
 	Text        string                              `json:"text"`
 	ChatChannel *TLGUpdateResponseResultChatChannel `json:"chat"`
-	From        *TLGUpdateResponseResultFrom        `json:"from"`
+	From        *TLGUpdateResponseResultUser        `json:"from"`
+}
+
+type TLGUpdateResponseResultEntity struct {
+	Type string                       `json:"type"`
+	User *TLGUpdateResponseResultUser `json:"user"`
 }
 
 func (rano *Rano) getUpdates() {
@@ -112,7 +118,7 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 			if result.EditedMessage != nil {
 				message = result.EditedMessage
 			}
-			author := &Author{
+			author := &User{
 				Id:   message.From.Id,
 				Name: message.From.Name,
 			}
@@ -122,7 +128,7 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 			}
 			var replyTo *Message
 			if message.ReplyTo != nil {
-				replyToAuthor := &Author{
+				replyToAuthor := &User{
 					Id:   message.ReplyTo.From.Id,
 					Name: message.ReplyTo.From.Name,
 				}
@@ -137,6 +143,19 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 					Date:  time.Unix(message.ReplyTo.UnixDate, 0),
 				}
 			}
+
+			entities := []*Entity{}
+			for _, entityResp := range message.Entities {
+				entityObjc := &Entity{
+					Type: entityResp.Type,
+				}
+				if entityResp.User != nil {
+					entityObjc.User = &User{
+						Id:   entityResp.User.Id,
+						Name: entityResp.User.Name,
+					}
+				}
+			}
 			messageObjc := &Message{
 				UpdateId: result.UpdateId,
 				From:     author,
@@ -144,6 +163,7 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 				Text:     message.Text,
 				Date:     time.Unix(message.UnixDate, 0),
 				ReplyTo:  replyTo,
+				Entities: entities,
 			}
 			list = append(list, messageObjc)
 		}
@@ -151,7 +171,7 @@ func (r *TLGUpdateResponse) toMessageList() []*Message {
 	return list
 }
 
-type Author struct {
+type User struct {
 	Id   int64
 	Name string
 }
@@ -163,11 +183,17 @@ type Group struct {
 
 type Message struct {
 	UpdateId int64
-	From     *Author
+	From     *User
 	Group    *Group
 	Text     string
 	Date     time.Time
 	ReplyTo  *Message
+	Entities []*Entity
+}
+
+type Entity struct {
+	Type string
+	User *User
 }
 
 // {
