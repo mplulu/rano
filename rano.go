@@ -3,6 +3,7 @@ package rano
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -17,6 +18,8 @@ type Rano struct {
 	lastUpdateId            int64
 	alreadyReceivingMessage bool
 	MessageChan             chan *Message
+
+	regexLogList []string
 }
 
 type MessageHandler func(message string)
@@ -38,6 +41,10 @@ func NewRano(token string, chatIdList []string) *Rano {
 		},
 	}
 	return rano
+}
+
+func (rano *Rano) SetRegexLogList(list []string) {
+	rano.regexLogList = list
 }
 
 func (rano *Rano) SendTo(chatId int64, text string) error {
@@ -100,6 +107,13 @@ func (rano *Rano) SendPhoto(chatId int64, photo []byte) error {
 func (rano *Rano) Send(text string) error {
 	if rano.isDisable {
 		return nil
+	}
+
+	for _, regexStr := range rano.regexLogList {
+		matched, _ := regexp.MatchString(regexStr, text)
+		if matched {
+			fmt.Println("Rano regex log", GetStack())
+		}
 	}
 	for _, chatId := range rano.chatIdList {
 		_, err := rano.sendRequest(
